@@ -14,47 +14,26 @@
 <img src="samples/visualizations/test_BImnT7lcLDE_00003_grid.gif">
 </p>
 
-
 <p align="center"> 
 <img src="cover.png">
 </p>
-<p align="center"> Our method performs visual-speech aware 3D reconstruction so that speech perception from the original footage is preserved in the reconstructed talking head. On the left we include the word/phrase being said for each example. <p align="center">
-
-This is the official Pytorch implementation of the paper:
-  
-```
-Visual Speech-Aware Perceptual 3D Facial Expression Reconstruction from Videos
-Panagiotis P. Filntisis, George Retsinas, Foivos Paraperas-Papantoniou, Athanasios Katsamanis, Anastasios Roussos, and Petros Maragos
-arXiv 2022
-```
-## News
-
-- 🔧 SPECTRE has been integrated into [EMOCAv2](https://github.com/radekd91/emoca)!
-- 🆕 Check out our new work on 3D face reconstruction, [SMIRK](https://github.com/georgeretsi/smirk), which achieves state-of-the-art results on facial expressions!  
-  Learn more on the [project page](https://georgeretsi.github.io/smirk/) and in the [paper](https://arxiv.org/pdf/2404.04104).
-
+<p align="center"> Our method performs visual-speech aware 3D reconstruction so that speech perception from the original footage is preserved in the reconstructed talking head. On the left we include the word/phrase being said for each example. </p>
 
 ## Installation
-Clone the repo and its submodules:
+Clone the repository with submodules:
 ```bash
-git clone --recurse-submodules -j4 https://github.com/filby89/spectre
+git clone --recurse-submodules -j4 https://github.com/Sreejaedla1122/SPECTRE
 cd spectre
-```  
-
-You need to have installed a working version of Pytorch with Python 3.6 or higher and Pytorch 3D. You can use the following commands to create a working installation:
-```bash
-conda create -n "spectre" python=3.8
-conda install -c pytorch pytorch=1.11.0 torchvision torchaudio # you might need to select cudatoolkit version here by adding e.g. cudatoolkit=11.3
-conda install -c conda-forge -c fvcore fvcore iopath 
-conda install pytorch3d -c pytorch3d
-pip install -r requirements.txt # install the rest of the requirements
 ```
 
-Installing a working setup of Pytorch3d with Pytorch can be a bit tricky. For development we used Pytorch3d 0.6.1 with Pytorch 1.10.0. 
+Install dependencies:
+```bash
+pip install torch torchvision torchaudio fvcore iopath
+pip install "git+https://github.com/facebookresearch/pytorch3d.git"
+pip install -r requirements.txt
+```
 
-PyTorch3d 0.6.2 with pytorch 1.11.0 are also compatible. 
-
-Install the face_alignment and face_detection packages:
+Install additional external dependencies:
 ```bash
 cd external/face_alignment
 pip install -e .
@@ -63,69 +42,95 @@ git lfs pull
 pip install -e .
 cd ../..
 ```
-You may need to install git-lfs to run the above commands. [More details](https://stackoverflow.com/questions/48734119/git-lfs-is-not-a-git-command-unclear)  
+
+Install Git LFS if needed:
 ```bash
 curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
 sudo apt-get install git-lfs
 ```
-Download the FLAME model and the pretrained SPECTRE model:
+
+Install gdown:
 ```bash
 pip install gdown
-bash quick_install.sh
 ```
 
-## Demo
-Samples are included in ``samples`` folder. You can run the demo by running 
+### **Additional Setup Requirements**
+1. Create an account at [FLAME](https://flame.is.tue.mpg.de/). You will need the username and password while running:
+   ```bash
+   bash quick_install.sh
+   ```
 
+2. Modify the following files before running the demo:
+   - `chumpy/__init__.py` and `chumpy/ch.py` require changes. Refer to the Colab notebook in the `notebook` folder for details.
+   - `external/Visual_Speech_Recognition_for_Multiple_Languages/tracker/face_tracker.py` also needs modifications. Check the Colab notebook for instructions.
+
+## Running on Google Colab
+We provide a Colab notebook for easy setup and execution. You can access it using the following link:
+
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](notebook/spectre.ipynb)
+
+Follow the instructions in the notebook to set up the environment, download the required models, and run the demo.
+
+## Demo
+Run the demo using an example video:
 ```bash
 python demo.py --input samples/LRS3/0Fi83BHQsMA_00002.mp4 --audio
 ```
 
-The audio flag extracts audio from the input video and puts it in the output shape video for visualization purposes (ffmpeg is required for video creation).
+To visualize the results inside a Jupyter Notebook:
+```python
+from IPython.display import HTML
+from base64 import b64encode
 
-## Training and Testing
-In order to train the model you need to download the `trainval` and `test` sets of the [LRS3 dataset](https://www.robots.ox.ac.uk/~vgg/data/lip_reading/lrs3.html). After downloading 
-the dataset, run the following command to extract frames and audio from the videos (audio is not needed for training but it is nice for visualizing the result):
+def show_video(video_path, video_width=600):
+    mp4 = open(video_path,'rb').read()
+    data_url = "data:video/mp4;base64," + b64encode(mp4).decode()
+    return HTML(f"""
+    <video width="{video_width}" controls>
+        <source src="{data_url}" type="video/mp4">
+    </video>
+    """)
 
-```bash
-python utils/extract_frames_and_audio.py --dataset_path ./data/LRS3
+show_video("logs/demo_output.mp4")
 ```
 
-After downloading and preprocessing the dataset, download the rest needed assets:
-
+## Using the Streamlit App
+You can run the Streamlit-based interface for ease of use. First, install Streamlit:
 ```bash
+pip install streamlit
+```
+
+Run the Streamlit app:
+```bash
+streamlit run app.py
+```
+
+Once running, you will see a public URL from ngrok that you can use to access the app from any device.
+
+## Training and Testing
+Prepare the dataset:
+```bash
+python utils/extract_frames_and_audio.py --dataset_path ./data/LRS3
 bash get_training_data.sh
 ```
 
-This command downloads the original [DECA](https://github.com/YadiraF/DECA/) pretrained model,
-the ResNet50 emotion recognition model provided by [EMOCA](https://github.com/radekd91/emoca),
-the pretrained lipreading model and detected landmarks for the videos of the LRS3 dataset provided by [Visual_Speech_Recognition_for_Multiple_Languages](https://github.com/mpc001/Visual_Speech_Recognition_for_Multiple_Languages).
-
-Finally, you need to create a texture model using the repository [BFM_to_FLAME](https://github.com/TimoBolkart/BFM_to_FLAME#create-texture-model). Due
-to licencing reasons we are not allowed to share it to you.
-
-Now, you can run the following command to train the model:
-
+Train the model:
 ```bash
 python main.py --output_dir logs --landmark 50 --relative_landmark 25 --lipread 2 --expression 0.5 --epochs 6 --LRS3_path data/LRS3 --LRS3_landmarks_path data/LRS3_landmarks
 ```
 
-and then test it on the LRS3 dataset test set:
-
+Test the model:
 ```bash
 python main.py --test --output_dir logs --model_path logs/model.tar --LRS3_path data/LRS3 --LRS3_landmarks_path data/LRS3_landmarks
 ```
 
-and run lipreading with AV-hubert: 
-
+Run lipreading with AV-Hubert:
 ```bash
-# and run lipreading with our script
-python utils/run_av_hubert.py --videos "logs/test_videos_000000/*_mouth.avi --LRS3_path data/LRS3"
+python utils/run_av_hubert.py --videos "logs/test_videos_000000/*_mouth.avi" --LRS3_path data/LRS3
 ```
 
-
 ## Acknowledgements
-This repo is has been heavily based on the original implementation of [DECA](https://github.com/YadiraF/DECA/). We also acknowledge the following 
+This repo has been heavily based on the original implementation of [DECA](https://github.com/YadiraF/DECA/). We also acknowledge the following 
 repositories which we have benefited greatly from as well:
 
 - [EMOCA](https://github.com/radekd91/emoca)
@@ -143,6 +148,3 @@ If your research benefits from this repository, consider citing the following:
   publisher = {arXiv},
   year = {2022},
 }
-```
-  
-  
